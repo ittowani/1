@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodPet - 食品ロス削減＆栄養記録アプリ</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #F3F4F6;
+        }
+
+        /* カスタムアニメーション */
+        @keyframes bounce-slow {
+            0%, 100% { transform: translateY(-5%); }
+            50% { transform: translateY(5%); }
+        }
+        .animate-bounce-slow {
+            animation: bounce-slow 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-grow {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-pulse-grow {
+            animation: pulse-grow 1.5s infinite ease-in-out;
+        }
+
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            z-index: 100;
+            pointer-events: none;
+            animation: confetti-fall 3s linear forwards;
+        }
+    </style>
+</head>
+<body class="text-gray-800 pb-20 md:pb-6">
+
+    <!-- ヘッダー -->
+    <header class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid to-utensils text-2xl text-yellow-300"></i>
+                <h1 class="text-xl font-black tracking-wide">FoodPet</h1>
+            </div>
+            <div class="flex items-center bg-white/20 px-3 py-1 rounded-full text-xs font-bold">
+                <i class="fa-solid fa-coins text-yellow-300 mr-1.5"></i>
+                <span id="header-points">350 PT</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ領域 -->
+    <main class="max-w-md mx-auto p-4 space-y-6">
+
+        <!-- ナビゲーションタブ -->
+        <nav class="flex bg-white rounded-2xl p-1.5 shadow-sm border border-emerald-100">
+            <button id="tab-btn-home" onclick="switchTab('home')" class="flex-1 py-2 text-sm font-bold rounded-xl transition-all duration-200 bg-emerald-500 text-white shadow">
+                <i class="fa-solid fa-egg mr-1"></i>ペット
+            </button>
+            <button id="tab-btn-record" onclick="switchTab('record')" class="flex-1 py-2 text-sm font-bold rounded-xl transition-all duration-200 text-gray-500 hover:text-emerald-500">
+                <i class="fa-solid fa-camera mr-1"></i>記録
+            </button>
+            <button id="tab-btn-team" onclick="switchTab('team')" class="flex-1 py-2 text-sm font-bold rounded-xl transition-all duration-200 text-gray-500 hover:text-emerald-500">
+                <i class="fa-solid fa-people-group mr-1"></i>家族
+            </button>
+            <button id="tab-btn-log" onclick="switchTab('log')" class="flex-1 py-2 text-sm font-bold rounded-xl transition-all duration-200 text-gray-500 hover:text-emerald-500">
+                <i class="fa-solid fa-utensils mr-1"></i>ログ
+            </button>
+        </nav>
+
+        <!-- ================= PAGE 1: HOME (ペット育成) ================= -->
+        <section id="page-home" class="space-y-4">
+            <!-- ペットカード -->
+            <div class="bg-gradient-to-b from-sky-100 via-emerald-50 to-emerald-100 rounded-3xl p-6 shadow-sm border border-emerald-200 text-center relative overflow-hidden">
+                <!-- ステータスバッジ -->
+                <div class="flex justify-between items-center mb-2">
+                    <span id="pet-stage-name" class="bg-emerald-600 text-white text-xs px-3 py-1 rounded-full font-bold">
+                        Lv.1 たまごペット
+                    </span>
+                    <span id="pet-hunger-status" class="bg-orange-100 text-orange-600 border border-orange-200 text-xs px-3 py-1 rounded-full font-bold">
+                        <i class="fa-solid fa-face-smile mr-1"></i>おなか普通
+                    </span>
+                </div>
+
+                <!-- ペットグラフィック表示エリア -->
+                <div class="h-44 flex items-center justify-center my-2 relative">
+                    <div id="pet-visual" class="animate-bounce-slow transition-all duration-500 transform hover:scale-110 cursor-pointer" onclick="interactPet()">
+                        <!-- JSで動的にペットアイコンを描画 -->
+                    </div>
+                </div>
+
+                <p id="pet-dialogue" class="text-sm font-bold text-gray-700 bg-white/80 py-2 px-4 rounded-2xl inline-block shadow-sm border border-emerald-100 mb-4">
+                    ごはんを食べる前に「ビフォー」の写真を撮ってね！
+                </p>
+
+                <!-- 経験値バー -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-bold text-gray-600 px-1">
+                        <span>EXP (進化まで)</span>
+                        <span id="pet-exp-text">40 / 100</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3.5 overflow-hidden p-0.5 border border-gray-300">
+                        <div id="pet-exp-bar" class="bg-gradient-to-r from-emerald-400 to-green-500 h-full rounded-full transition-all duration-500" style="width: 40%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 本日の削減クイックサマリー -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-3">
+                    <div class="bg-emerald-100 p-3 rounded-xl text-emerald-600">
+                        <i class="fa-solid fa-leaf text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400 font-bold">今日のフードロス削減</div>
+                        <div id="summary-waste-saved" class="text-lg font-black text-gray-800">180 g</div>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-3">
+                    <div class="bg-orange-100 p-3 rounded-xl text-orange-600">
+                        <i class="fa-solid fa-fire text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400 font-bold">本日の摂取カロリー</div>
+                        <div id="summary-calories" class="text-lg font-black text-gray-800">1,240 kcal</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- アクション誘導ボタン -->
+            <button onclick="switchTab('record')" class="w-full bg-gradient-to-r from-orange-400 to-amber-500 hover:from-orange-500 hover:to-amber-600 text-white font-black py-4 rounded-2xl shadow-lg transform active:scale-95 transition flex items-center justify-center space-x-2 text-lg">
+                <i class="fa-solid fa-camera text-2xl"></i>
+                <span>食事の撮影・完食チェック</span>
+            </button>
+        </section>
+
+
+        <!-- ================= PAGE 2: RECORD (撮影＆AI解析) ================= -->
+        <section id="page-record" class="hidden space-y-4">
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+                <h2 class="text-base font-bold text-gray-800 border-l-4 border-emerald-500 pl-3 mb-4">
+                    完食チェックフロー（不正防止）
+                </h2>
+                <p class="text-xs text-gray-500 mb-4 leading-relaxed">
+                    空のお皿だけの撮影を防ぐため、<strong class="text-emerald-600">「食べる前」</strong>と<strong class="text-emerald-600">「食べ終わった後」</strong>の両方の写真を送信してください。
+                </p>
+
+                <!-- 写真登録カード（2枚並び） -->
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <!-- BEFORE -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-center text-gray-600">1. 食べる前 (Before)</label>
+                        <div id="before-box" class="relative border-2 border-dashed border-emerald-300 rounded-2xl h-40 flex flex-col items-center justify-center bg-emerald-50/50 hover:bg-emerald-50 transition cursor-pointer overflow-hidden" onclick="triggerUpload('before')">
+                            <img id="before-preview" class="hidden w-full h-full object-cover">
+                            <div id="before-placeholder" class="text-center p-2">
+                                <i class="fa-solid fa-utensils text-2xl text-emerald-400 mb-1"></i>
+                                <span class="block text-xs font-bold text-emerald-600">写真を撮影</span>
+                                <span class="text-[10px] text-gray-400">タップして選択</span>
+                            </div>
+                            <span id="before-badge" class="hidden absolute top-2 right-2 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow">
+                                <i class="fa-solid fa-check"></i> 準備OK
+                            </span>
+                        </div>
+                        <input type="file" id="before-input" accept="image/*" class="hidden" onchange="handleFileSelect(event, 'before')">
+                    </div>
+
+                    <!-- AFTER -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-center text-gray-600">2. 完食後 (After)</label>
+                        <div id="after-box" class="relative border-2 border-dashed border-gray-300 rounded-2xl h-40 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition cursor-pointer overflow-hidden" onclick="triggerUpload('after')">
+                            <img id="after-preview" class="hidden w-full h-full object-cover">
+                            <div id="after-placeholder" class="text-center p-2">
+                                <i class="fa-solid fa-sparkles text-2xl text-gray-300 mb-1"></i>
+                                <span class="block text-xs font-bold text-gray-400">完食後の写真</span>
+                                <span class="text-[10px] text-gray-400">タップして選択</span>
+                            </div>
+                            <span id="after-badge" class="hidden absolute top-2 right-2 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow">
+                                <i class="fa-solid fa-check"></i> 完食OK
+                            </span>
+                        </div>
+                        <input type="file" id="after-input" accept="image/*" class="hidden" onchange="handleFileSelect(event, 'after')">
+                    </div>
+                </div>
+
+                <!-- サンプル画像一括設定（デモ用） -->
+                <div class="bg-gray-50 p-3 rounded-2xl mb-4 text-center">
+                    <p class="text-xs text-gray-500 font-bold mb-2">手元に写真がない場合（デモ用テスト入力）</p>
+                    <button onclick="loadDemoPhotos()" class="bg-white border border-gray-300 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm hover:bg-gray-50">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-500 mr-1"></i>デモ用写真を自動入力
+                    </button>
+                </div>
+
+                <!-- AI解析ボタン -->
+                <button id="analyze-btn" onclick="startAIAnalysis()" disabled class="w-full bg-gray-300 text-gray-500 font-black py-3.5 rounded-2xl shadow-sm transition flex items-center justify-center space-x-2 cursor-not-allowed">
+                    <i class="fa-solid fa-robot"></i>
+                    <span>AIで完食判定 & 栄養分析</span>
+                </button>
+            </div>
+
+            <!-- AI解析中ローダー (隠し) -->
+            <div id="ai-loader" class="hidden bg-white p-6 rounded-3xl shadow-sm border border-emerald-100 text-center space-y-3">
+                <div class="inline-block p-4 bg-emerald-50 rounded-full animate-spin text-emerald-500 text-3xl">
+                    <i class="fa-solid fa-circle-notch"></i>
+                </div>
+                <h3 class="font-bold text-gray-700">AIが画像を照合・解析中...</h3>
+                <p class="text-xs text-gray-400">食事量の減少度と栄養バランスを計算しています</p>
+            </div>
+
+            <!-- AI解析結果画面 (隠し) -->
+            <div id="ai-result-card" class="hidden bg-gradient-to-b from-white to-emerald-50/40 rounded-3xl p-5 shadow-md border border-emerald-200 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-emerald-500 text-white text-xs px-2.5 py-1 rounded-full font-bold">判定完了</span>
+                        <h3 id="result-dish-name" class="font-bold text-lg text-gray-800">彩り野菜ハンバーグ定食</h3>
+                    </div>
+                    <span class="text-emerald-600 font-black text-sm">完食率 100%</span>
+                </div>
+
+                <!-- 削減成果まとめ -->
+                <div class="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 flex justify-around text-center">
+                    <div>
+                        <div class="text-[10px] text-emerald-600 font-bold">食品ロス削減</div>
+                        <div id="result-waste-saved" class="text-lg font-black text-emerald-700">120 g</div>
+                    </div>
+                    <div class="border-r border-emerald-200"></div>
+                    <div>
+                        <div class="text-[10px] text-emerald-600 font-bold">獲得ペットEXP</div>
+                        <div id="result-exp-gained" class="text-lg font-black text-emerald-700">+30 EXP</div>
+                    </div>
+                </div>
+
+                <!-- 栄養分析結果 -->
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold text-gray-500 flex items-center">
+                        <i class="fa-solid fa-chart-pie mr-1 text-emerald-500"></i> AI推定栄養価
+                    </h4>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs font-bold">
+                        <div class="bg-white p-2.5 rounded-xl border border-gray-100 shadow-sm">
+                            <div class="text-gray-400 text-[10px]">カロリー</div>
+                            <div id="result-calories" class="text-gray-700 text-sm mt-0.5">650 kcal</div>
+                        </div>
+                        <div class="bg-white p-2.5 rounded-xl border border-gray-100 shadow-sm">
+                            <div class="text-gray-400 text-[10px]">タンパク質</div>
+                            <div id="result-protein" class="text-gray-700 text-sm mt-0.5">24.5 g</div>
+                        </div>
+                        <div class="bg-white p-2.5 rounded-xl border border-gray-100 shadow-sm">
+                            <div class="text-gray-400 text-[10px]">野菜摂取量</div>
+                            <div id="result-veggie" class="text-emerald-600 text-sm mt-0.5">140 g</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 保存・ペット反映ボタン -->
+                <button onclick="saveMealRecord()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3.5 rounded-2xl shadow-md transition transform active:scale-95 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-check-circle text-lg"></i>
+                    <span>記録を確定してペットを成長させる！</span>
+                </button>
+            </div>
+        </section>
+
+
+        <!-- ================= PAGE 3: TEAM (家族チーム) ================= -->
+        <section id="page-team" class="hidden space-y-4">
+            <!-- チームヘッダー -->
+            <div class="bg-gradient-to-r from-teal-500 to-emerald-600 rounded-3xl p-5 text-white shadow-md">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <span class="bg-white/20 text-xs px-2.5 py-0.5 rounded-full font-bold">ファミリーチーム</span>
+                        <h2 class="text-xl font-black mt-1">たなか家 Eco Team</h2>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs opacity-80">チームLv</div>
+                        <div class="text-2xl font-black text-yellow-300">Lv. 4</div>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-bold opacity-90">
+                        <span>今月の家族合計食品ロス削減目標</span>
+                        <span>4.2kg / 5.0kg</span>
+                    </div>
+                    <div class="w-full bg-black/20 rounded-full h-3 overflow-hidden p-0.5">
+                        <div class="bg-yellow-300 h-full rounded-full" style="width: 84%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- メンバーランキング -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-3">
+                <h3 class="font-bold text-gray-800 text-sm border-l-4 border-emerald-500 pl-2">
+                    今月の完食貢献ランキング
+                </h3>
+
+                <div id="family-member-list" class="space-y-2.5">
+                    <!-- JSで動的に追加可能 -->
+                </div>
+            </div>
+
+            <!-- 応援掲示板 / コメント -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-3">
+                <h3 class="font-bold text-gray-800 text-sm border-l-4 border-amber-500 pl-2">
+                    家族の応援掲示板
+                </h3>
+
+                <div id="chat-messages" class="space-y-3 max-h-48 overflow-y-auto pr-1">
+                    <div class="flex space-x-2">
+                        <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">パ</div>
+                        <div class="bg-gray-100 p-2.5 rounded-2xl rounded-tl-none text-xs text-gray-700">
+                            今日も残さず綺麗に食べたよ！ペット進化まであと少し！
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <div class="w-7 h-7 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center font-bold text-xs shrink-0">マ</div>
+                        <div class="bg-gray-100 p-2.5 rounded-2xl rounded-tl-none text-xs text-gray-700">
+                            夕飯の野菜もバッチリ完食できたね👍
+                        </div>
+                    </div>
+                </div>
+
+                <!-- コメント投稿フォーム -->
+                <div class="flex space-x-2 pt-2">
+                    <input type="text" id="chat-input" placeholder="メッセージを入力..." class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500">
+                    <button onclick="sendChatMessage()" class="bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs hover:bg-emerald-600 transition">
+                        送信
+                    </button>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= PAGE 4: LOG (履歴) ================= -->
+        <section id="page-log" class="hidden space-y-4">
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-gray-800 border-l-4 border-emerald-500 pl-2">食事・完食ログ</h3>
+                    <span id="log-count" class="text-xs text-gray-400 font-bold">全 3 件</span>
+                </div>
+
+                <div id="meal-log-container" class="space-y-3">
+                    <!-- JSで動的にログアイテムを表示 -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 進化モーダルダイアログ -->
+    <div id="evolution-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 text-center max-w-sm w-full space-y-4 shadow-2xl animate-pulse-grow">
+            <div class="text-yellow-400 text-4xl">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <h3 class="text-2xl font-black text-gray-800">ペットが進化しました！</h3>
+            <div id="modal-pet-visual" class="h-32 flex items-center justify-center">
+                <!-- 進化後アイコン -->
+            </div>
+            <p id="modal-pet-desc" class="text-sm font-bold text-gray-600">
+                おめでとう！「ひよこペット」に成長したよ！
+            </p>
+            <button onclick="closeEvolutionModal()" class="w-full bg-emerald-500 text-white font-black py-3 rounded-2xl shadow-md hover:bg-emerald-600">
+                やったね！
+            </button>
+        </div>
+    </div>
+
+    <!-- カスタムトースト通知 -->
+    <div id="toast" class="fixed top-16 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50">
+        メッセージ
+    </div>
+
+    <!-- Javascript アプリケーションロジック -->
+    <script>
+        // ==========================================
+        // 状態管理 (State)
+        // ==========================================
+        const state = {
+            pet: {
+                level: 1, // 1: たまご, 2: ひよこ, 3: ドラゴン
+                exp: 40,
+                maxExp: 100,
+                name: "たまごペット"
+            },
+            points: 350,
+            photos: {
+                before: null,
+                after: null
+            },
+            logs: [
+                {
+                    id: 1,
+                    date: "2026/11/02 12:30",
+                    name: "特製カレーライス",
+                    wasteSaved: 150,
+                    calories: 720,
+                    protein: 18.5,
+                    veggie: 90,
+                    beforeImg: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=200&q=80",
+                    afterImg: "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?auto=format&fit=crop&w=200&q=80"
+                },
+                {
+                    id: 2,
+                    date: "2026/11/01 19:00",
+                    name: "焼き魚定食",
+                    wasteSaved: 110,
+                    calories: 580,
+                    protein: 28.0,
+                    veggie: 120,
+                    beforeImg: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=200&q=80",
+                    afterImg: "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?auto=format&fit=crop&w=200&q=80"
+                }
+            ],
+            family: [
+                { id: 1, name: "自分 (あなた)", points: 350, count: 12, isSelf: true, avatarBg: "bg-emerald-100", avatarColor: "text-emerald-600" },
+                { id: 2, name: "お母さん", points: 420, count: 15, isSelf: false, avatarBg: "bg-pink-100", avatarColor: "text-pink-600" },
+                { id: 3, name: "お父さん", points: 290, count: 9, isSelf: false, avatarBg: "bg-blue-100", avatarColor: "text-blue-600" },
+                { id: 4, name: "妹", points: 180, count: 6, isSelf: false, avatarBg: "bg-purple-100", avatarColor: "text-purple-600" }
+            ],
+            currentAnalysis: null
+        };
+
+        // ==========================================
+        // ペット設定定義
+        // ==========================================
+        const PET_STAGES = {
+            1: {
+                name: "Lv.1 たまごペット",
+                icon: '<i class="fa-solid fa-egg text-8xl text-amber-300 drop-shadow-md"></i>',
+                dialogue: "ごはんを食べる前に「ビフォー」の写真を撮ってね！",
+                maxExp: 100
+            },
+            2: {
+                name: "Lv.2 ひよこペット",
+                icon: '<i class="fa-solid fa-kiwi-bird text-8xl text-yellow-400 drop-shadow-md"></i>',
+                dialogue: "ピヨピヨ！いつもピカピカに食べてくれてありがとう！",
+                maxExp: 200
+            },
+            3: {
+                name: "Lv.3 エコドラゴン",
+                icon: '<i class="fa-solid fa-dragon text-8xl text-emerald-500 drop-shadow-md"></i>',
+                dialogue: "ガオー！食べ残しゼロマスター達成だね！最強のエコヒーロー！",
+                maxExp: 999
+            }
+        };
+
+        // 初期化処理
+        window.onload = function() {
+            renderPet();
+            renderFamilyList();
+            renderLogs();
+        };
+
+        // ==========================================
+        // タブ切り替え
+        // ==========================================
+        function switchTab(tabName) {
+            const tabs = ['home', 'record', 'team', 'log'];
+            tabs.forEach(t => {
+                const page = document.getElementById(`page-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tabName) {
+                    page.classList.remove('hidden');
+                    btn.classList.add('bg-emerald-500', 'text-white', 'shadow');
+                    btn.classList.remove('text-gray-500');
+                } else {
+                    page.classList.add('hidden');
+                    btn.classList.remove('bg-emerald-500', 'text-white', 'shadow');
+                    btn.classList.add('text-gray-500');
+                }
+            });
+        }
+
+        // ==========================================
+        // ペット描画＆更新
+        // ==========================================
+        function renderPet() {
+            const stage = PET_STAGES[state.pet.level];
+            document.getElementById('pet-stage-name').innerText = stage.name;
+            document.getElementById('pet-visual').innerHTML = stage.icon;
+            document.getElementById('pet-dialogue').innerText = stage.dialogue;
+            
+            // EXPバー
+            const percent = Math.min(100, Math.floor((state.pet.exp / stage.maxExp) * 100));
+            document.getElementById('pet-exp-bar').style.width = percent + '%';
+            document.getElementById('pet-exp-text').innerText = `${state.pet.exp} / ${stage.maxExp}`;
+        }
+
+        function interactPet() {
+            showToast("ペット「残さず食べてくれてありがとう！」");
+        }
+
+        // ==========================================
+        // 撮影＆ファイル選択 (Before / After)
+        // ==========================================
+        function triggerUpload(type) {
+            document.getElementById(`${type}-input`).click();
+        }
+
+        function handleFileSelect(event, type) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    setPhotoData(type, e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function setPhotoData(type, src) {
+            state.photos[type] = src;
+            const preview = document.getElementById(`${type}-preview`);
+            const placeholder = document.getElementById(`${type}-placeholder`);
+            const badge = document.getElementById(`${type}-badge`);
+            const box = document.getElementById(`${type}-box`);
+
+            preview.src = src;
+            preview.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            badge.classList.remove('hidden');
+            box.classList.remove('border-dashed');
+            box.classList.add('border-solid', 'border-emerald-500');
+
+            checkCanAnalyze();
+        }
+
+        // デモ用写真の一括セット
+        function loadDemoPhotos() {
+            const sampleBefore = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80";
+            const sampleAfter = "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?auto=format&fit=crop&w=400&q=80";
+            
+            setPhotoData('before', sampleBefore);
+            setPhotoData('after', sampleAfter);
+            showToast("デモ用のビフォー・アフター写真をセットしました");
+        }
+
+        // 完食ボタン有効化チェック (不正防止ルール)
+        function checkCanAnalyze() {
+            const btn = document.getElementById('analyze-btn');
+            if (state.photos.before && state.photos.after) {
+                btn.disabled = false;
+                btn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btn.classList.add('bg-gradient-to-r', 'from-emerald-500', 'to-teal-600', 'text-white', 'hover:opacity-90', 'shadow-md');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btn.classList.remove('bg-gradient-to-r', 'from-emerald-500', 'to-teal-600', 'text-white', 'hover:opacity-90', 'shadow-md');
+            }
+        }
+
+        // ==========================================
+        // AI模擬解析の実行
+        // ==========================================
+        function startAIAnalysis() {
+            if (!state.photos.before || !state.photos.after) return;
+
+            document.getElementById('ai-loader').classList.remove('hidden');
+            document.getElementById('ai-result-card').classList.add('hidden');
+
+            // 擬似的なAI処理（2秒待機）
+            setTimeout(() => {
+                document.getElementById('ai-loader').classList.add('hidden');
+                
+                // ランダムなダミー栄養データ作成
+                const dishes = ["彩り生野菜サラダ定食", "具だくさん野菜炒め", "ヘルシーチキンプレート", "和風ボウル"];
+                const selectedDish = dishes[Math.floor(Math.random() * dishes.length)];
+                
+                state.currentAnalysis = {
+                    dishName: selectedDish,
+                    wasteSaved: 130,
+                    expGained: 35,
+                    calories: 620,
+                    protein: 22.4,
+                    veggie: 150
+                };
+
+                // UI反映
+                document.getElementById('result-dish-name').innerText = state.currentAnalysis.dishName;
+                document.getElementById('result-waste-saved').innerText = `${state.currentAnalysis.wasteSaved} g`;
+                document.getElementById('result-exp-gained').innerText = `+${state.currentAnalysis.expGained} EXP`;
+                document.getElementById('result-calories').innerText = `${state.currentAnalysis.calories} kcal`;
+                document.getElementById('result-protein').innerText = `${state.currentAnalysis.protein} g`;
+                document.getElementById('result-veggie').innerText = `${state.currentAnalysis.veggie} g`;
+
+                document.getElementById('ai-result-card').classList.remove('hidden');
+            }, 1800);
+        }
+
+        // ==========================================
+        // 記録の保存とペットへの反映
+        // ==========================================
+        function saveMealRecord() {
+            if (!state.currentAnalysis) return;
+
+            const res = state.currentAnalysis;
+
+            // 1. ログ追加
+            const newLog = {
+                id: Date.now(),
+                date: new Date().toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
+                name: res.dishName,
+                wasteSaved: res.wasteSaved,
+                calories: res.calories,
+                protein: res.protein,
+                veggie: res.veggie,
+                beforeImg: state.photos.before,
+                afterImg: state.photos.after
+            };
+            state.logs.unshift(newLog);
+            renderLogs();
+
+            // 2. 経験値＆ポイント更新
+            state.pet.exp += res.expGained;
+            state.points += 50;
+            document.getElementById('header-points').innerText = `${state.points} PT`;
+
+            // 3. 自分・家族のスコア加算
+            const selfMember = state.family.find(m => m.isSelf);
+            if (selfMember) {
+                selfMember.points += 50;
+                selfMember.count += 1;
+                renderFamilyList();
+            }
+
+            // 紙吹雪アニメーション
+            triggerConfetti();
+
+            // 4. 進化判定
+            const currentStage = PET_STAGES[state.pet.level];
+            let hasEvolved = false;
+
+            if (state.pet.level < 3 && state.pet.exp >= currentStage.maxExp) {
+                state.pet.level += 1;
+                hasEvolved = true;
+            }
+
+            renderPet();
+
+            // フォームのリセット
+            resetRecordForm();
+
+            if (hasEvolved) {
+                showEvolutionModal();
+            } else {
+                showToast(`完食達成！ +${res.expGained} EXP 獲得！`);
+                switchTab('home');
+            }
+        }
+
+        function resetRecordForm() {
+            state.photos.before = null;
+            state.photos.after = null;
+            state.currentAnalysis = null;
+
+            ['before', 'after'].forEach(type => {
+                document.getElementById(`${type}-preview`).classList.add('hidden');
+                document.getElementById(`${type}-placeholder`).classList.remove('hidden');
+                document.getElementById(`${type}-badge`).classList.add('hidden');
+                document.getElementById(`${type}-box`).classList.add('border-dashed');
+                document.getElementById(`${type}-input`).value = '';
+            });
+
+            document.getElementById('ai-result-card').classList.add('hidden');
+            checkCanAnalyze();
+        }
+
+        // ==========================================
+        // モーダル＆進化アニメーション
+        // ==========================================
+        function showEvolutionModal() {
+            const stage = PET_STAGES[state.pet.level];
+            document.getElementById('modal-pet-visual').innerHTML = stage.icon;
+            document.getElementById('modal-pet-desc').innerText = `おめでとう！「${stage.name}」に進化したよ！`;
+            document.getElementById('evolution-modal').classList.remove('hidden');
+        }
+
+        function closeEvolutionModal() {
+            document.getElementById('evolution-modal').classList.add('hidden');
+            switchTab('home');
+        }
+
+        // ==========================================
+        // 家族機能・ランキング描画
+        // ==========================================
+        function renderFamilyList() {
+            const container = document.getElementById('family-member-list');
+            container.innerHTML = '';
+
+            // スコア順にソート
+            const sorted = [...state.family].sort((a, b) => b.points - a.points);
+
+            sorted.forEach((member, index) => {
+                const rank = index + 1;
+                const el = document.createElement('div');
+                el.className = `flex items-center justify-between p-3 rounded-2xl ${member.isSelf ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50'}`;
+                
+                let rankBadge = `<span class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 font-black text-xs flex items-center justify-center">${rank}</span>`;
+                if (rank === 1) rankBadge = `<span class="w-6 h-6 rounded-full bg-yellow-400 text-white font-black text-xs flex items-center justify-center shadow"><i class="fa-solid fa-crown"></i></span>`;
+
+                el.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        ${rankBadge}
+                        <div class="w-9 h-9 rounded-full ${member.avatarBg} ${member.avatarColor} font-bold flex items-center justify-center text-sm shadow-sm">
+                            ${member.name.substring(0, 1)}
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-gray-800">${member.name}</div>
+                            <div class="text-[10px] text-gray-400 font-bold">完食数: ${member.count} 回</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-black text-emerald-600">${member.points} PT</div>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const chatContainer = document.getElementById('chat-messages');
+            const msgEl = document.createElement('div');
+            msgEl.className = "flex space-x-2 justify-end";
+            msgEl.innerHTML = `
+                <div class="bg-emerald-500 text-white p-2.5 rounded-2xl rounded-tr-none text-xs font-bold shadow-sm">
+                    ${escapeHtml(text)}
+                </div>
+            `;
+            chatContainer.appendChild(msgEl);
+            input.value = '';
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // ==========================================
+        // ログ一覧描画
+        // ==========================================
+        function renderLogs() {
+            const container = document.getElementById('meal-log-container');
+            container.innerHTML = '';
+
+            document.getElementById('log-count').innerText = `全 ${state.logs.length} 件`;
+
+            state.logs.forEach(log => {
+                const item = document.createElement('div');
+                item.className = "bg-gray-50 rounded-2xl p-3 border border-gray-100 flex space-x-3 items-center";
+                item.innerHTML = `
+                    <div class="flex space-x-1 shrink-0">
+                        <img src="${log.beforeImg}" class="w-12 h-12 rounded-xl object-cover border border-gray-200">
+                        <img src="${log.afterImg}" class="w-12 h-12 rounded-xl object-cover border border-gray-200">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-start">
+                            <h4 class="text-xs font-bold text-gray-800 truncate">${escapeHtml(log.name)}</h4>
+                            <span class="text-[10px] text-gray-400 font-bold shrink-0">${log.date}</span>
+                        </div>
+                        <div class="flex space-x-2 mt-1 text-[10px] font-bold text-gray-500">
+                            <span class="text-emerald-600"><i class="fa-solid fa-leaf"></i> -${log.wasteSaved}g</span>
+                            <span>${log.calories} kcal</span>
+                            <span>野菜 ${log.veggie}g</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // ==========================================
+        // ユーティリティ
+        // ==========================================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 2500);
+        }
+
+        function triggerConfetti() {
+            const colors = ['#10B981', '#F59E0B', '#3B82F6', '#EC4899'];
+            for (let i = 0; i < 30; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                document.body.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+    </script>
+</body>
+</html>
